@@ -7,10 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mi Heladería">
+<meta name="apple-mobile-web-app-title" content="Lluvia de Sabores 2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Mi Heladería · Panel financiero</title>
+<title>Lluvia de Sabores 2 · Panel financiero</title>
 <style>
 :root{
   --cream:#FFF7EA;
@@ -80,6 +80,20 @@ header.top{
   font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink);margin-left:2px;
 }
 .period-day-input.show{display:inline-block;}
+.period-controls{display:none;margin-bottom:16px;}
+.period-controls.show{display:block;}
+.pc-block{
+  display:none;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);
+  padding:10px 12px;border-radius:14px;box-shadow:var(--shadow-sm);
+}
+.pc-block.show{display:flex;}
+.pc-label{font-family:ui-rounded,'SF Pro Rounded','Segoe UI',system-ui,sans-serif;font-weight:700;font-size:14.5px;min-width:190px;text-align:center;flex:1;}
+.pc-inline{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.pc-block input[type=date], .pc-block select{
+  border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-family:inherit;
+  font-size:13.5px;background:var(--cream);color:var(--ink);font-weight:600;
+}
+.pc-block select{flex:1;min-width:110px;}
 
 /* ---------- Hero ---------- */
 .hero{
@@ -303,7 +317,7 @@ datalist{}
     <div class="brand">
       <div class="brand-mark">🍨</div>
       <div>
-        <h1>Mi Heladería</h1>
+        <h1>Lluvia de Sabores 2</h1>
         <span>Panel de ventas y gastos</span>
       </div>
     </div>
@@ -312,17 +326,40 @@ datalist{}
       <button data-period="semana">Semana</button>
       <button data-period="mes">Mes</button>
       <button data-period="dia">Día</button>
+      <button data-period="rango">Rango</button>
       <button data-period="todo">Todo</button>
-      <input type="date" id="periodDayPicker" class="period-day-input">
     </div>
   </header>
 
+  <div class="period-controls" id="periodControls">
+    <div class="pc-block" id="pcSemana">
+      <button type="button" class="day-nav-btn" id="weekPrev" aria-label="Semana anterior">‹</button>
+      <div class="pc-label" id="weekLabel"></div>
+      <button type="button" class="day-nav-btn" id="weekNext" aria-label="Semana siguiente">›</button>
+      <label class="pc-inline">Ir a la semana de <input type="date" id="weekDatePick"></label>
+    </div>
+    <div class="pc-block" id="pcMes">
+      <button type="button" class="day-nav-btn" id="monthPrev" aria-label="Mes anterior">‹</button>
+      <select id="monthSelect"></select>
+      <select id="yearSelect"></select>
+      <button type="button" class="day-nav-btn" id="monthNext" aria-label="Mes siguiente">›</button>
+    </div>
+    <div class="pc-block" id="pcDia">
+      <label class="pc-inline">Día <input type="date" id="periodDayPicker"></label>
+    </div>
+    <div class="pc-block" id="pcRango">
+      <label class="pc-inline">Desde <input type="date" id="rangeFrom"></label>
+      <label class="pc-inline">Hasta <input type="date" id="rangeTo"></label>
+    </div>
+  </div>
+
   <section class="hero">
-    <p class="hero-label">Balance del periodo</p>
+    <p class="hero-label" id="heroLabel">Balance del periodo</p>
     <div class="hero-amount" id="heroBalance">$ 0</div>
     <div class="hero-sub">
       <div class="v"><p>Ventas</p><strong id="heroVentas">$ 0</strong></div>
       <div class="g"><p>Gastos</p><strong id="heroGastos">$ 0</strong></div>
+      <div id="heroMonedasWrap" style="display:none;"><p>Ajuste monedas</p><strong id="heroMonedas" style="color:#8FDDE8;">$ 0</strong></div>
       <div><p>Transacciones</p><strong id="heroCount">0</strong></div>
     </div>
   </section>
@@ -342,6 +379,7 @@ datalist{}
     <button class="tab-btn active" data-tab="resumen">Resumen</button>
     <button class="tab-btn" data-tab="dia">Por día</button>
     <button class="tab-btn" data-tab="metodos">Métodos de pago</button>
+    <button class="tab-btn" data-tab="monedas">Monedas</button>
     <button class="tab-btn" data-tab="partners">Clientes y proveedores</button>
     <button class="tab-btn" data-tab="categorias">Categorías</button>
     <button class="tab-btn" data-tab="historial">Historial</button>
@@ -352,7 +390,7 @@ datalist{}
     <div class="kpis">
       <div class="kpi venta"><p>Total ventas</p><strong id="kpiVentas">$ 0</strong></div>
       <div class="kpi gasto"><p>Total gastos</p><strong id="kpiGastos">$ 0</strong></div>
-      <div class="kpi balance"><p>Ganancia neta</p><strong id="kpiBalance">$ 0</strong></div>
+      <div class="kpi balance"><p>Ganancia neta</p><strong id="kpiBalance">$ 0</strong><span id="kpiBalanceNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
       <div class="kpi"><p>Ticket promedio venta</p><strong id="kpiTicket">$ 0</strong></div>
     </div>
     <div class="card">
@@ -372,7 +410,7 @@ datalist{}
     <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
       <div class="kpi venta"><p>Ventas del día</p><strong id="diaVentas">$ 0</strong></div>
       <div class="kpi gasto"><p>Gastos del día</p><strong id="diaGastos">$ 0</strong></div>
-      <div class="kpi balance"><p>Balance del día</p><strong id="diaBalance">$ 0</strong></div>
+      <div class="kpi balance"><p>Balance del día</p><strong id="diaBalance">$ 0</strong><span id="diaBalanceNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
     </div>
     <div class="card" style="padding:0;overflow-x:auto;">
       <table id="diaTable">
@@ -390,7 +428,7 @@ datalist{}
     <div class="card" style="margin-bottom:16px;">
       <h3>Balance por método de pago (ventas − gastos)</h3>
       <div class="kpis" style="grid-template-columns:repeat(2,1fr);margin-bottom:0;">
-        <div class="kpi"><p>💵 Efectivo</p><strong id="balEfectivo" style="color:var(--mango);">$ 0</strong></div>
+        <div class="kpi"><p>💵 Efectivo</p><strong id="balEfectivo" style="color:var(--mango);">$ 0</strong><span id="balEfectivoNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:4px;"></span></div>
         <div class="kpi"><p>📲 Transferencia</p><strong id="balTransferencia" style="color:var(--coco);">$ 0</strong></div>
       </div>
     </div>
@@ -403,6 +441,30 @@ datalist{}
         <h3>Gastos por método de pago</h3>
         <div id="donutGastos"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- MONEDAS -->
+  <div class="panel" id="panel-monedas">
+    <div class="export-row" style="justify-content:flex-start;">
+      <button class="action-btn" id="openMoneda" style="padding:13px 18px;font-size:14.5px;background:linear-gradient(135deg, var(--coco), #4FC7D6);">
+        <span class="ico" style="width:30px;height:30px;font-size:16px;">🪙</span>
+        <span>Registrar saldo de monedas</span>
+      </button>
+    </div>
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
+      <div class="kpi"><p>Saldo actual</p><strong id="monedaSaldoActual">$ 0</strong></div>
+      <div class="kpi"><p>Diferencia de hoy</p><strong id="monedaDifHoy">—</strong></div>
+      <div class="kpi"><p>Ajuste acumulado (periodo)</p><strong id="monedaAjustePeriodo">$ 0</strong></div>
+    </div>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table id="monedasTable">
+        <thead>
+          <tr><th>Fecha</th><th>Saldo contado</th><th>Diferencia</th><th>Notas</th><th></th></tr>
+        </thead>
+        <tbody id="monedasBody"></tbody>
+      </table>
+      <div id="monedasEmpty" class="empty" style="display:none;"><div class="em">🪙</div>Aún no has registrado saldos de monedas.</div>
     </div>
   </div>
 
@@ -565,14 +627,49 @@ datalist{}
   </div>
 </div>
 
+<!-- MODAL MONEDAS -->
+<div class="overlay" id="overlayMoneda">
+  <div class="modal">
+    <h2>🪙 Saldo de monedas</h2>
+    <p class="modal-sub">Cuenta cuántas monedas (en valor) tienes hoy. La diferencia con el día anterior se calcula sola.</p>
+    <form id="formMoneda">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="monedaFecha" required>
+      </div>
+      <div class="field">
+        <label>Saldo contado</label>
+        <div class="amount-input"><span>$</span><input type="text" inputmode="numeric" id="monedaMonto" placeholder="0" required></div>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <textarea id="monedaNotas" placeholder="Ej: conteo de caja al cierre"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" data-close="overlayMoneda">Cancelar</button>
+        <button type="submit" class="btn-save" style="background:linear-gradient(135deg, var(--coco), #4FC7D6);">Guardar saldo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const STORAGE_KEY = 'heladeria2-transactions';
+const COINS_KEY = 'heladeria2-monedas';
 let DATA = []; // array of {id,type,monto,fecha,metodo,contraparte,categoria,notas}
+let COINS = []; // array of {id,fecha,saldo,notas} - un registro por día
 let currentPeriod = 'hoy';
 let dayViewDate = todayStr();
+let weekAnchor = todayStr();
+let monthSel = { y: new Date().getFullYear(), m: new Date().getMonth() };
+let rangeFrom = '';
+let rangeTo = '';
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const fmt = n => '$ ' + Math.round(n).toLocaleString('es-CO');
+const fmtSigned = n => (n < 0 ? '-$ ' : '+$ ') + Math.round(Math.abs(n)).toLocaleString('es-CO');
 
 /* ---------- Storage (localStorage del navegador del celular/PC) ---------- */
 async function loadData(){
@@ -589,6 +686,22 @@ async function saveData(){
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
   }catch(e){
     showToast('No se pudo guardar. Espacio lleno o navegador en modo privado.');
+  }
+}
+
+async function loadCoins(){
+  try{
+    const raw = localStorage.getItem(COINS_KEY);
+    COINS = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    COINS = [];
+  }
+}
+async function saveCoins(){
+  try{
+    localStorage.setItem(COINS_KEY, JSON.stringify(COINS));
+  }catch(e){
+    showToast('No se pudo guardar el saldo de monedas.');
   }
 }
 
@@ -651,9 +764,15 @@ function setupChipGroup(groupId){
 setupChipGroup('ventaCategoria');
 setupChipGroup('gastoCategoria');
 
+function toISO(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 function todayStr(){
-  const d = new Date();
-  return d.toISOString().slice(0,10);
+  return toISO(new Date());
+}
+function fmtFechaCorta(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  return d + ' ' + MESES_CORTO[m-1] + ' ' + y;
 }
 
 function resetFormVenta(){
@@ -740,27 +859,121 @@ document.getElementById('tabs').addEventListener('click', e=>{
 });
 
 /* ---------- Period picker ---------- */
+function weekRange(anchorIso){
+  const start = startOfWeekMonday(new Date(anchorIso+'T00:00:00'));
+  const end = new Date(start); end.setDate(start.getDate()+6);
+  return { start: toISO(start), end: toISO(end) };
+}
+
+function periodLabel(){
+  if(currentPeriod === 'hoy') return 'Balance de hoy';
+  if(currentPeriod === 'dia') return 'Balance del ' + fmtFechaCorta(dayViewDate);
+  if(currentPeriod === 'semana'){
+    const w = weekRange(weekAnchor);
+    return 'Balance · semana del ' + fmtFechaCorta(w.start) + ' al ' + fmtFechaCorta(w.end);
+  }
+  if(currentPeriod === 'mes') return 'Balance · ' + MESES[monthSel.m] + ' ' + monthSel.y;
+  if(currentPeriod === 'rango'){
+    if(rangeFrom && rangeTo){
+      const lo = rangeFrom <= rangeTo ? rangeFrom : rangeTo;
+      const hi = rangeFrom <= rangeTo ? rangeTo : rangeFrom;
+      return 'Balance · del ' + fmtFechaCorta(lo) + ' al ' + fmtFechaCorta(hi);
+    }
+    return 'Balance · rango personalizado';
+  }
+  return 'Balance histórico (todo)';
+}
+
+function buildMonthYearSelects(){
+  const ms = document.getElementById('monthSelect');
+  const ys = document.getElementById('yearSelect');
+  if(!ms.options.length){
+    ms.innerHTML = MESES.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+  }
+  const nowY = new Date().getFullYear();
+  let minY = Math.min(nowY - 1, monthSel.y);
+  DATA.forEach(r=>{ const y = parseInt((r.fecha||'').slice(0,4)); if(y && y < minY) minY = y; });
+  const maxY = Math.max(nowY + 1, monthSel.y);
+  let html = '';
+  for(let y = minY; y <= maxY; y++) html += `<option value="${y}">${y}</option>`;
+  ys.innerHTML = html;
+  ms.value = String(monthSel.m);
+  ys.value = String(monthSel.y);
+}
+
+function updatePeriodControls(){
+  const pc = document.getElementById('periodControls');
+  ['pcSemana','pcMes','pcDia','pcRango'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  const map = { semana:'pcSemana', mes:'pcMes', dia:'pcDia', rango:'pcRango' };
+  if(map[currentPeriod]){
+    pc.classList.add('show');
+    document.getElementById(map[currentPeriod]).classList.add('show');
+  } else {
+    pc.classList.remove('show');
+  }
+  // sincronizar valores
+  const w = weekRange(weekAnchor);
+  document.getElementById('weekLabel').textContent = 'Semana del ' + fmtFechaCorta(w.start) + ' al ' + fmtFechaCorta(w.end);
+  document.getElementById('weekDatePick').value = weekAnchor;
+  buildMonthYearSelects();
+  document.getElementById('periodDayPicker').value = dayViewDate;
+  document.getElementById('rangeFrom').value = rangeFrom;
+  document.getElementById('rangeTo').value = rangeTo;
+}
+
 document.getElementById('periodPicker').addEventListener('click', e=>{
   const btn = e.target.closest('button');
   if(!btn) return;
   document.querySelectorAll('#periodPicker button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   currentPeriod = btn.dataset.period;
-  const dayInput = document.getElementById('periodDayPicker');
-  if(currentPeriod === 'dia'){
-    dayInput.classList.add('show');
-    dayInput.value = dayViewDate;
-  } else {
-    dayInput.classList.remove('show');
+  if(currentPeriod === 'rango' && !rangeFrom && !rangeTo){
+    const now = new Date();
+    rangeFrom = toISO(new Date(now.getFullYear(), now.getMonth(), 1));
+    rangeTo = todayStr();
   }
   renderAll();
 });
+
+// Semana
+document.getElementById('weekPrev').addEventListener('click', ()=>{
+  const d = new Date(weekAnchor+'T00:00:00'); d.setDate(d.getDate()-7); weekAnchor = toISO(d); renderAll();
+});
+document.getElementById('weekNext').addEventListener('click', ()=>{
+  const d = new Date(weekAnchor+'T00:00:00'); d.setDate(d.getDate()+7); weekAnchor = toISO(d); renderAll();
+});
+document.getElementById('weekDatePick').addEventListener('change', e=>{
+  if(e.target.value){ weekAnchor = e.target.value; renderAll(); }
+});
+
+// Mes
+document.getElementById('monthSelect').addEventListener('change', e=>{
+  monthSel.m = parseInt(e.target.value); renderAll();
+});
+document.getElementById('yearSelect').addEventListener('change', e=>{
+  monthSel.y = parseInt(e.target.value); renderAll();
+});
+function shiftMonth(delta){
+  let m = monthSel.m + delta, y = monthSel.y;
+  if(m < 0){ m = 11; y--; }
+  if(m > 11){ m = 0; y++; }
+  monthSel = { y, m };
+  renderAll();
+}
+document.getElementById('monthPrev').addEventListener('click', ()=>shiftMonth(-1));
+document.getElementById('monthNext').addEventListener('click', ()=>shiftMonth(1));
+
+// Día
 document.getElementById('periodDayPicker').addEventListener('change', e=>{
   if(e.target.value){
     dayViewDate = e.target.value;
     renderAll();
   }
 });
+
+// Rango
+document.getElementById('rangeFrom').addEventListener('change', e=>{ rangeFrom = e.target.value; renderAll(); });
+document.getElementById('rangeTo').addEventListener('change', e=>{ rangeTo = e.target.value; renderAll(); });
 
 /* ---------- Filtering by period ---------- */
 function startOfWeekMonday(d){
@@ -773,32 +986,35 @@ function startOfWeekMonday(d){
 }
 function inPeriod(fecha){
   if(currentPeriod === 'todo') return true;
-  const d = new Date(fecha+'T00:00:00');
-  const now = new Date();
-  if(currentPeriod === 'hoy'){
-    return fecha === todayStr();
-  }
+  if(currentPeriod === 'hoy') return fecha === todayStr();
+  if(currentPeriod === 'dia') return fecha === dayViewDate;
   if(currentPeriod === 'semana'){
-    const start = startOfWeekMonday(now);
-    const end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
-    return d >= start && d <= end;
+    const w = weekRange(weekAnchor);
+    return fecha >= w.start && fecha <= w.end;
   }
   if(currentPeriod === 'mes'){
-    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    const prefix = monthSel.y + '-' + String(monthSel.m+1).padStart(2,'0');
+    return (fecha||'').slice(0,7) === prefix;
   }
-  if(currentPeriod === 'dia'){
-    return fecha === dayViewDate;
+  if(currentPeriod === 'rango'){
+    let lo = rangeFrom, hi = rangeTo;
+    if(lo && hi && lo > hi){ const t = lo; lo = hi; hi = t; }
+    if(lo && fecha < lo) return false;
+    if(hi && fecha > hi) return false;
+    return true;
   }
   return true;
 }
 
 /* ---------- Rendering ---------- */
 function renderAll(){
+  updatePeriodControls();
   const filtered = DATA.filter(r=>inPeriod(r.fecha));
   renderHero(filtered);
   renderResumen(filtered);
   renderDia();
   renderMetodos(filtered);
+  renderMonedas();
   renderPartners(filtered);
   renderCategorias(filtered);
   renderHistorial();
@@ -811,13 +1027,18 @@ function renderHero(filtered){
   const ventas = filtered.filter(r=>r.type==='venta');
   const gastos = filtered.filter(r=>r.type==='gasto');
   const tv = sum(ventas), tg = sum(gastos);
-  const balance = tv - tg;
+  const ajuste = coinAdjustment();
+  const balance = tv - tg - ajuste;
+  const monWrap = document.getElementById('heroMonedasWrap');
+  monWrap.style.display = ajuste !== 0 ? '' : 'none';
+  document.getElementById('heroMonedas').textContent = adjLabel(ajuste);
   const el = document.getElementById('heroBalance');
   el.textContent = fmt(balance);
   el.classList.toggle('neg', balance < 0);
   document.getElementById('heroVentas').textContent = fmt(tv);
   document.getElementById('heroGastos').textContent = fmt(tg);
   document.getElementById('heroCount').textContent = filtered.length;
+  document.getElementById('heroLabel').textContent = periodLabel();
 }
 
 function renderResumen(filtered){
@@ -826,14 +1047,16 @@ function renderResumen(filtered){
   const tv = sum(ventas), tg = sum(gastos);
   document.getElementById('kpiVentas').textContent = fmt(tv);
   document.getElementById('kpiGastos').textContent = fmt(tg);
-  document.getElementById('kpiBalance').textContent = fmt(tv-tg);
+  const ajusteRes = coinAdjustment();
+  document.getElementById('kpiBalance').textContent = fmt(tv-tg-ajusteRes);
+  document.getElementById('kpiBalanceNota').textContent = ajusteRes !== 0 ? 'Incluye ajuste de monedas ' + adjLabel(ajusteRes) : '';
   document.getElementById('kpiTicket').textContent = fmt(ventas.length ? tv/ventas.length : 0);
 
   // Last 7 days trend (always full data, independent of period picker)
   const days = [];
   for(let i=6;i>=0;i--){
     const d = new Date(); d.setDate(d.getDate()-i);
-    days.push(d.toISOString().slice(0,10));
+    days.push(toISO(d));
   }
   const dayTotals = days.map(day=>{
     const v = sum(DATA.filter(r=>r.type==='venta' && r.fecha===day));
@@ -899,12 +1122,17 @@ function renderMetodos(filtered){
   const vTr = sum(ventas.filter(r=>r.metodo==='transferencia'));
   const gEf = sum(gastos.filter(r=>r.metodo==='efectivo'));
   const gTr = sum(gastos.filter(r=>r.metodo==='transferencia'));
-  const balEf = vEf - gEf;
+  const ajusteMonedas = coinAdjustment();
+  const balEfBase = vEf - gEf;
+  const balEf = balEfBase - ajusteMonedas;
   const balTr = vTr - gTr;
   const elEf = document.getElementById('balEfectivo');
   const elTr = document.getElementById('balTransferencia');
   elEf.textContent = fmt(balEf);
   elEf.style.color = balEf < 0 ? 'var(--corozo)' : 'var(--mango)';
+  document.getElementById('balEfectivoNota').textContent = ajusteMonedas !== 0
+    ? 'Ventas − gastos ' + fmt(balEfBase) + ' · ajuste monedas ' + (ajusteMonedas > 0 ? '−' : '+') + fmt(Math.abs(ajusteMonedas))
+    : '';
   elTr.textContent = fmt(balTr);
   elTr.style.color = balTr < 0 ? 'var(--corozo)' : 'var(--coco)';
   drawDonut('donutVentas', [
@@ -1007,8 +1235,10 @@ function renderDia(){
   const tv = sum(ventas), tg = sum(gastos);
   document.getElementById('diaVentas').textContent = fmt(tv);
   document.getElementById('diaGastos').textContent = fmt(tg);
+  const ajusteDia = coinAdjustment(f => f === dayViewDate);
   const balEl = document.getElementById('diaBalance');
-  balEl.textContent = fmt(tv-tg);
+  balEl.textContent = fmt(tv-tg-ajusteDia);
+  document.getElementById('diaBalanceNota').textContent = ajusteDia !== 0 ? 'Incluye ajuste de monedas ' + adjLabel(ajusteDia) : '';
 
   const body = document.getElementById('diaBody');
   const emptyEl = document.getElementById('diaEmpty');
@@ -1041,7 +1271,7 @@ document.getElementById('diaBody').addEventListener('click', async e=>{
 function shiftDay(delta){
   const d = new Date(dayViewDate+'T00:00:00');
   d.setDate(d.getDate()+delta);
-  dayViewDate = d.toISOString().slice(0,10);
+  dayViewDate = toISO(d);
   if(currentPeriod === 'dia') renderAll(); else renderDia();
 }
 document.getElementById('dayPrev').addEventListener('click', ()=>shiftDay(-1));
@@ -1185,6 +1415,105 @@ document.getElementById('importFile').addEventListener('change', async e=>{
   e.target.value = '';
 });
 
+/* ---------- Monedas ---------- */
+function coinsWithDiff(){
+  const sorted = [...COINS].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  return sorted.map((c,i)=>({
+    ...c,
+    diferencia: i === 0 ? null : sorted[i-1].saldo - c.saldo
+  }));
+}
+function coinAdjustment(pred){
+  const test = pred || inPeriod;
+  return coinsWithDiff()
+    .filter(c=>c.diferencia !== null && test(c.fecha))
+    .reduce((a,c)=>a + c.diferencia, 0);
+}
+function adjLabel(a){
+  return (a > 0 ? '−' : '+') + fmt(Math.abs(a));
+}
+
+function renderMonedas(){
+  const list = coinsWithDiff();
+  const body = document.getElementById('monedasBody');
+  const emptyEl = document.getElementById('monedasEmpty');
+
+  // KPIs
+  const last = list.length ? list[list.length-1] : null;
+  document.getElementById('monedaSaldoActual').textContent = last ? fmt(last.saldo) : '$ 0';
+  const hoy = list.find(c=>c.fecha === todayStr());
+  const difEl = document.getElementById('monedaDifHoy');
+  difEl.textContent = (hoy && hoy.diferencia !== null) ? fmt(hoy.diferencia) : '—';
+  const ajuste = coinAdjustment();
+  document.getElementById('monedaAjustePeriodo').textContent = fmt(ajuste);
+
+  if(list.length === 0){
+    body.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  body.innerHTML = [...list].reverse().map(c=>{
+    let difHtml;
+    if(c.diferencia === null){
+      difHtml = '<span style="color:var(--ink-soft);font-size:12px;">Primer registro</span>';
+    } else if(c.diferencia > 0){
+      difHtml = `<strong style="color:var(--corozo-dark);">${fmt(c.diferencia)}</strong><div style="font-size:11px;color:var(--ink-soft);">Descuenta del efectivo</div>`;
+    } else if(c.diferencia < 0){
+      difHtml = `<strong style="color:#5A7115;">${fmt(Math.abs(c.diferencia))}</strong><div style="font-size:11px;color:var(--ink-soft);">Suma al efectivo (aumentaron las monedas)</div>`;
+    } else {
+      difHtml = '<span style="color:var(--ink-soft);">$ 0</span>';
+    }
+    return `<tr>
+      <td>${c.fecha}</td>
+      <td class="amt">${fmt(c.saldo)}</td>
+      <td>${difHtml}</td>
+      <td style="font-size:12px;color:var(--ink-soft);">${c.notas || ''}</td>
+      <td><button class="del-btn" data-id="${c.id}" title="Eliminar">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function prefillMoneda(fecha){
+  const ex = COINS.find(x=>x.fecha === fecha);
+  document.getElementById('monedaMonto').value = ex ? String(ex.saldo) : '';
+  document.getElementById('monedaNotas').value = ex ? (ex.notas || '') : '';
+}
+document.getElementById('openMoneda').addEventListener('click', ()=>{
+  document.getElementById('monedaFecha').value = todayStr();
+  prefillMoneda(todayStr());
+  openModal('overlayMoneda');
+});
+document.getElementById('monedaFecha').addEventListener('change', e=>{
+  if(e.target.value) prefillMoneda(e.target.value);
+});
+document.getElementById('formMoneda').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const saldo = parseInt(document.getElementById('monedaMonto').value.replace(/\D/g,''));
+  if(isNaN(saldo)){ showToast('Ingresa el saldo contado.'); return; }
+  const fecha = document.getElementById('monedaFecha').value || todayStr();
+  const notas = document.getElementById('monedaNotas').value.trim();
+  const existing = COINS.find(x=>x.fecha === fecha);
+  if(existing){
+    existing.saldo = saldo;
+    existing.notas = notas;
+  } else {
+    COINS.push({ id: crypto.randomUUID(), fecha, saldo, notas });
+  }
+  await saveCoins();
+  closeModal('overlayMoneda');
+  showToast(existing ? 'Saldo del día actualizado ✅' : 'Saldo de monedas registrado ✅');
+  renderAll();
+});
+document.getElementById('monedasBody').addEventListener('click', async e=>{
+  const btn = e.target.closest('.del-btn');
+  if(!btn) return;
+  COINS = COINS.filter(x=>x.id !== btn.dataset.id);
+  await saveCoins();
+  showToast('Registro de monedas eliminado');
+  renderAll();
+});
+
 /* ---------- Init ---------- */
 async function init(){
   document.getElementById('ventaFecha').value = todayStr();
@@ -1192,6 +1521,7 @@ async function init(){
   buildQuickAmounts('ventaQuick','ventaMonto');
   buildQuickAmounts('gastoQuick','gastoMonto');
   await loadData();
+  await loadCoins();
   renderAll();
 }
 init();

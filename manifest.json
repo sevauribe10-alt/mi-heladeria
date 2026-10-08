@@ -1,6 +1,6 @@
 {
-  "name": "Mi Heladería",
-  "short_name": "Mi Heladería",
+  "name": "Lluvia de Sabores 2",
+  "short_name": "Lluvia de Sabores 2",
   "description": "Registro de ventas y gastos con informes dinámicos",
   "start_url": "./index.html",
   "scope": "./",

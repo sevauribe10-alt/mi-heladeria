@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mi-heladeria-v1';
+const CACHE_NAME = 'lluvia-sabores-2-v2';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
