@@ -357,7 +357,7 @@ datalist{}
     <p class="hero-label" id="heroLabel">Balance del periodo</p>
     <div class="hero-amount" id="heroBalance">$ 0</div>
     <div class="hero-sub">
-      <div class="v"><p>Ventas</p><strong id="heroVentas">$ 0</strong></div>
+      <div class="v"><p id="heroVentasLabel">Ventas</p><strong id="heroVentas">$ 0</strong></div>
       <div class="g"><p>Gastos</p><strong id="heroGastos">$ 0</strong></div>
       <div id="heroMonedasWrap" style="display:none;"><p>Ajuste monedas</p><strong id="heroMonedas" style="color:#8FDDE8;">$ 0</strong></div>
       <div><p>Transacciones</p><strong id="heroCount">0</strong></div>
@@ -388,7 +388,7 @@ datalist{}
   <!-- RESUMEN -->
   <div class="panel active" id="panel-resumen">
     <div class="kpis">
-      <div class="kpi venta"><p>Total ventas</p><strong id="kpiVentas">$ 0</strong></div>
+      <div class="kpi venta"><p>Total ventas</p><strong id="kpiVentas">$ 0</strong><span id="kpiVentasNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
       <div class="kpi gasto"><p>Total gastos</p><strong id="kpiGastos">$ 0</strong></div>
       <div class="kpi balance"><p>Ganancia neta</p><strong id="kpiBalance">$ 0</strong><span id="kpiBalanceNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
       <div class="kpi"><p>Ticket promedio venta</p><strong id="kpiTicket">$ 0</strong></div>
@@ -408,7 +408,7 @@ datalist{}
       <button class="day-today-btn" id="dayToday">Hoy</button>
     </div>
     <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px;">
-      <div class="kpi venta"><p>Ventas del día</p><strong id="diaVentas">$ 0</strong></div>
+      <div class="kpi venta"><p>Ventas del día</p><strong id="diaVentas">$ 0</strong><span id="diaVentasNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
       <div class="kpi gasto"><p>Gastos del día</p><strong id="diaGastos">$ 0</strong></div>
       <div class="kpi balance"><p>Balance del día</p><strong id="diaBalance">$ 0</strong><span id="diaBalanceNota" style="display:block;font-size:11px;color:var(--ink-soft);font-weight:500;margin-top:3px;"></span></div>
     </div>
@@ -1028,14 +1028,16 @@ function renderHero(filtered){
   const gastos = filtered.filter(r=>r.type==='gasto');
   const tv = sum(ventas), tg = sum(gastos);
   const ajuste = coinAdjustment();
-  const balance = tv - tg - ajuste;
+  const tvAdj = tv - ajuste;               // ventas cruzadas con monedas
+  const balance = tvAdj - tg;
+  document.getElementById('heroVentasLabel').textContent = ajuste !== 0 ? 'Ventas ajustadas' : 'Ventas';
   const monWrap = document.getElementById('heroMonedasWrap');
   monWrap.style.display = ajuste !== 0 ? '' : 'none';
   document.getElementById('heroMonedas').textContent = adjLabel(ajuste);
   const el = document.getElementById('heroBalance');
   el.textContent = fmt(balance);
   el.classList.toggle('neg', balance < 0);
-  document.getElementById('heroVentas').textContent = fmt(tv);
+  document.getElementById('heroVentas').textContent = fmt(tvAdj);
   document.getElementById('heroGastos').textContent = fmt(tg);
   document.getElementById('heroCount').textContent = filtered.length;
   document.getElementById('heroLabel').textContent = periodLabel();
@@ -1045,12 +1047,14 @@ function renderResumen(filtered){
   const ventas = filtered.filter(r=>r.type==='venta');
   const gastos = filtered.filter(r=>r.type==='gasto');
   const tv = sum(ventas), tg = sum(gastos);
-  document.getElementById('kpiVentas').textContent = fmt(tv);
-  document.getElementById('kpiGastos').textContent = fmt(tg);
   const ajusteRes = coinAdjustment();
-  document.getElementById('kpiBalance').textContent = fmt(tv-tg-ajusteRes);
-  document.getElementById('kpiBalanceNota').textContent = ajusteRes !== 0 ? 'Incluye ajuste de monedas ' + adjLabel(ajusteRes) : '';
-  document.getElementById('kpiTicket').textContent = fmt(ventas.length ? tv/ventas.length : 0);
+  const tvAdj = tv - ajusteRes;            // ventas cruzadas con monedas
+  document.getElementById('kpiVentas').textContent = fmt(tvAdj);
+  document.getElementById('kpiVentasNota').textContent = ajusteRes !== 0 ? 'Registradas ' + fmt(tv) + ' · monedas ' + adjLabel(ajusteRes) : '';
+  document.getElementById('kpiGastos').textContent = fmt(tg);
+  document.getElementById('kpiBalance').textContent = fmt(tvAdj - tg);
+  document.getElementById('kpiBalanceNota').textContent = ajusteRes !== 0 ? 'Con ventas ajustadas por monedas' : '';
+  document.getElementById('kpiTicket').textContent = fmt(ventas.length ? tvAdj/ventas.length : 0);
 
   // Last 7 days trend (always full data, independent of period picker)
   const days = [];
@@ -1059,7 +1063,7 @@ function renderResumen(filtered){
     days.push(toISO(d));
   }
   const dayTotals = days.map(day=>{
-    const v = sum(DATA.filter(r=>r.type==='venta' && r.fecha===day));
+    const v = Math.max(0, sum(DATA.filter(r=>r.type==='venta' && r.fecha===day)) - coinAdjustment(f => f === day));
     const g = sum(DATA.filter(r=>r.type==='gasto' && r.fecha===day));
     return {day, v, g};
   });
@@ -1123,20 +1127,20 @@ function renderMetodos(filtered){
   const gEf = sum(gastos.filter(r=>r.metodo==='efectivo'));
   const gTr = sum(gastos.filter(r=>r.metodo==='transferencia'));
   const ajusteMonedas = coinAdjustment();
-  const balEfBase = vEf - gEf;
-  const balEf = balEfBase - ajusteMonedas;
+  const vEfAdj = vEf - ajusteMonedas;      // ventas en efectivo cruzadas con monedas
+  const balEf = vEfAdj - gEf;
   const balTr = vTr - gTr;
   const elEf = document.getElementById('balEfectivo');
   const elTr = document.getElementById('balTransferencia');
   elEf.textContent = fmt(balEf);
   elEf.style.color = balEf < 0 ? 'var(--corozo)' : 'var(--mango)';
   document.getElementById('balEfectivoNota').textContent = ajusteMonedas !== 0
-    ? 'Ventas − gastos ' + fmt(balEfBase) + ' · ajuste monedas ' + (ajusteMonedas > 0 ? '−' : '+') + fmt(Math.abs(ajusteMonedas))
+    ? 'Ventas efectivo ' + fmt(vEf) + ' · monedas ' + adjLabel(ajusteMonedas) + ' · gastos ' + fmt(gEf)
     : '';
   elTr.textContent = fmt(balTr);
   elTr.style.color = balTr < 0 ? 'var(--corozo)' : 'var(--coco)';
   drawDonut('donutVentas', [
-    {label:'Efectivo', value: vEf, color:'#96B822'},
+    {label:'Efectivo', value: Math.max(0, vEfAdj), color:'#96B822'},
     {label:'Transferencia', value: vTr, color:'#1E93A6'}
   ]);
   drawDonut('donutGastos', [
@@ -1233,12 +1237,14 @@ function renderDia(){
   const ventas = rows.filter(r=>r.type==='venta');
   const gastos = rows.filter(r=>r.type==='gasto');
   const tv = sum(ventas), tg = sum(gastos);
-  document.getElementById('diaVentas').textContent = fmt(tv);
-  document.getElementById('diaGastos').textContent = fmt(tg);
   const ajusteDia = coinAdjustment(f => f === dayViewDate);
+  const tvAdj = tv - ajusteDia;            // ventas del día cruzadas con monedas
+  document.getElementById('diaVentas').textContent = fmt(tvAdj);
+  document.getElementById('diaVentasNota').textContent = ajusteDia !== 0 ? 'Registradas ' + fmt(tv) + ' · monedas ' + adjLabel(ajusteDia) : '';
+  document.getElementById('diaGastos').textContent = fmt(tg);
   const balEl = document.getElementById('diaBalance');
-  balEl.textContent = fmt(tv-tg-ajusteDia);
-  document.getElementById('diaBalanceNota').textContent = ajusteDia !== 0 ? 'Incluye ajuste de monedas ' + adjLabel(ajusteDia) : '';
+  balEl.textContent = fmt(tvAdj - tg);
+  document.getElementById('diaBalanceNota').textContent = ajusteDia !== 0 ? 'Con ventas ajustadas por monedas' : '';
 
   const body = document.getElementById('diaBody');
   const emptyEl = document.getElementById('diaEmpty');
